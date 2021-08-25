@@ -1,3 +1,7 @@
+mod app;
+use app::{cli_app::CliApp, ClaveApp};
+
 fn main() {
-    println!("Hello, world!");
+    let mut application = CliApp::new();
+    application.run();
 }
