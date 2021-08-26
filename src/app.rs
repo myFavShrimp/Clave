@@ -1,5 +1,6 @@
 pub mod cli_app;
 pub mod args;
+mod cryptor;
 
 use std::path::PathBuf;
 
