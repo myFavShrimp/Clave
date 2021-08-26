@@ -23,7 +23,7 @@ impl ClaveApp for CliApp {
         self.file_paths.dedup();
 
         println!("These are the paths you have selected for processing:");
-        &self.file_paths.iter().for_each(|item| println!("\"{}\"", item.display()));
+        &self.file_paths.iter().for_each(|item| println!("  \"{}\"", item.display()));
 
         let mut password = match CliApp::prompt_password() {
             Some(password) => { password }
@@ -45,15 +45,15 @@ impl ClaveApp for CliApp {
             println!("The following files were processed successfully:");
             for item in &encryption_results {
                 if let Ok(file_path) = item {
-                    println!("  {}", file_path.display());
+                    println!("  \"{}\"", file_path.display());
                 }
             }
         }
-        if encryption_results.iter().any(|item| item.is_ok()) {
+        if encryption_results.iter().any(|item| item.is_err()) {
             println!("Errors occurred during the processing of the following files:");
             for item in &encryption_results {
                 if let Err((file_path, error_message)) = item {
-                    println!("  {} : {}", error_message, file_path.display());
+                    println!("  {} : \"{}\"", error_message, file_path.display());
                 }
             }
         }
