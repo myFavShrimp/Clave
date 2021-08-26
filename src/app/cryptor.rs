@@ -122,3 +122,68 @@ pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> Vec<FinalEncrypti
     }
     results
 }
+
+#[cfg(test)]
+mod test {
+    use file_diff::diff_files;
+    use super::*;
+
+    const TEST_PASSWORD: &'static str = "This is a super secret password no one's able to guess.";
+    const TEST_DIR: &'static str =
+        &concat!(env!("CARGO_MANIFEST_DIR"), "/test_files/dir_to_process");
+    const TEST_PIC_1: &'static str =
+        &concat!(env!("CARGO_MANIFEST_DIR"), "/test_files/dir_to_process/pic.jpg");
+    const TEST_PIC_2: &'static str =
+        &concat!(env!("CARGO_MANIFEST_DIR"), "/test_files/dir_to_process/subdir/pic.jpg");
+
+    /// Opens a file. Panics if opening fails.
+    fn open_file_or_panic(path: &PathBuf) -> File {
+        match File::open(path) {
+            Ok(f) => return f,
+            Err(e) => panic!("Couldn't open test file {:?}! : {}", path, e),
+        };
+    }
+
+    /// Compares two files. Returns true if they equal.
+    fn comp_files(path1: &PathBuf, path2: &PathBuf) -> bool {
+        let mut pic1 = open_file_or_panic(&path1);
+        let mut pic2 = open_file_or_panic(&path2);
+
+        diff_files(&mut pic1, &mut pic2)
+    }
+
+    #[test]
+    fn test_hash_str() {
+        let hash32 = hash_slice::<Sha3_256>(TEST_DIR.as_bytes());
+        let hash28 = hash_slice::<Sha3_224>(TEST_DIR.as_bytes());
+
+        assert_eq!(hash32.len(), 32);
+        assert_eq!(hash28.len(), 28);
+    }
+
+    #[test]
+    fn test_generate_nonce() {
+        generate_nonce(TEST_PASSWORD.as_bytes());
+    }
+
+    #[test]
+    fn test_create_cipher() {
+        create_cipher(TEST_PASSWORD.as_bytes());
+    }
+
+    #[test]
+    fn test_test_files_eq() {
+        assert!(comp_files(&PathBuf::from(TEST_PIC_1), &PathBuf::from(TEST_PIC_2)));
+    }
+
+    #[test]
+    fn test_encrypt_file() {
+        let mut cipher = create_cipher(TEST_PASSWORD.as_bytes());
+        let _anything = encrypt_file(&mut cipher, &PathBuf::from(TEST_PIC_1));
+        assert!(!comp_files(&PathBuf::from(TEST_PIC_1), &PathBuf::from(TEST_PIC_2)));
+
+        let mut cipher = create_cipher(TEST_PASSWORD.as_bytes());
+        let _anything = encrypt_file(&mut cipher, &PathBuf::from(TEST_PIC_1));
+        assert!(comp_files(&PathBuf::from(TEST_PIC_1), &PathBuf::from(TEST_PIC_2)));
+    }
+}
