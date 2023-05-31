@@ -4,6 +4,12 @@ use super::cryptor;
 
 use rpassword::prompt_password;
 
+static READ_PASSWORD_ERROR_MESSAGE: &str = "Could not read the password. Trying again ...";
+static PASSWORD_MATCH_ERROR_MESSAGE: &str = "The passwords do not match. Trying again ...";
+
+static CHOOSE_PASSWORD_MESSAGE: &str = "Choose a password to use for processing (leave empty to exit): ";
+static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
+
 #[derive(Debug)]
 pub struct ClaveApp {
     pub file_paths: Vec<PathBuf>,
@@ -51,37 +57,31 @@ impl ClaveApp {
         }
     }
 
-    const READ_PASSWORD_ERROR_MESSAGE: &'static str = "Could not read the password. Trying again ...";
-    const PASSWORD_MATCH_ERROR_MESSAGE: &'static str = "The passwords do not match. Trying again ...";
-
-    const CHOOSE_PASSWORD_MESSAGE: &'static str = "Choose a password to use for processing (leave empty to exit): ";
-    const CONFIRM_PASSWORD_MESSAGE: &'static str = "Confirm your password: ";
-
     /// Prompts the user to choose a password and reads the users response.
     fn prompt_password() -> Option<String> {
         let mut password: Option<String> = None;
 
         while password.is_none() {
-            match prompt_password(Self::CHOOSE_PASSWORD_MESSAGE) {
+            match prompt_password(CHOOSE_PASSWORD_MESSAGE) {
                 Ok(input) => {
                     if !&input.is_empty() {
-                        match prompt_password(Self::CONFIRM_PASSWORD_MESSAGE) {
+                        match prompt_password(CONFIRM_PASSWORD_MESSAGE) {
                             Ok(input_confirm) => {
                                 if input == input_confirm {
                                     password = Some(input);
                                 }
                                 else {
-                                    println!("{}", Self::PASSWORD_MATCH_ERROR_MESSAGE);
+                                    println!("{}", PASSWORD_MATCH_ERROR_MESSAGE);
                                 }
                             }
-                            _ => { println!("{}", Self::READ_PASSWORD_ERROR_MESSAGE); }
+                            _ => { println!("{}", READ_PASSWORD_ERROR_MESSAGE); }
                         }
                     }
                     else {
                         break;
                     }
                 }
-                _ => { println!("{}", Self::READ_PASSWORD_ERROR_MESSAGE); }
+                _ => { println!("{}", READ_PASSWORD_ERROR_MESSAGE); }
             }
         }
         password
