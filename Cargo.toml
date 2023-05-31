@@ -16,6 +16,7 @@ rpassword = "7.2"
 chacha20 = "0.7.2"
 sha3 = "0.10.8"
 clap = "2.33.3"
+thiserror = "1"
 
 [dev-dependencies]
 file_diff = "1.0.0"

@@ -2,8 +2,6 @@ use std::path::PathBuf;
 
 use super::cryptor;
 
-use rpassword::prompt_password;
-
 static READ_PASSWORD_ERROR_MESSAGE: &str = "Could not read the password. Trying again ...";
 static PASSWORD_MATCH_ERROR_MESSAGE: &str = "The passwords do not match. Trying again ...";
 
@@ -23,7 +21,7 @@ impl ClaveApp {
         println!("These are the paths you have selected for processing:");
         &self.file_paths.iter().for_each(|item| println!("  \"{}\"", item.display()));
 
-        let mut password = match Self::prompt_password() {
+        let mut password = match prompt_password() {
             Some(password) => { password }
             _ => {
                 println!("No input. Application is exited.");
@@ -57,33 +55,29 @@ impl ClaveApp {
         }
     }
 
-    /// Prompts the user to choose a password and reads the users response.
-    fn prompt_password() -> Option<String> {
-        let mut password: Option<String> = None;
+}
 
-        while password.is_none() {
-            match prompt_password(CHOOSE_PASSWORD_MESSAGE) {
-                Ok(input) => {
-                    if !&input.is_empty() {
-                        match prompt_password(CONFIRM_PASSWORD_MESSAGE) {
-                            Ok(input_confirm) => {
-                                if input == input_confirm {
-                                    password = Some(input);
-                                }
-                                else {
-                                    println!("{}", PASSWORD_MATCH_ERROR_MESSAGE);
-                                }
-                            }
-                            _ => { println!("{}", READ_PASSWORD_ERROR_MESSAGE); }
-                        }
-                    }
-                    else {
-                        break;
-                    }
-                }
-                _ => { println!("{}", READ_PASSWORD_ERROR_MESSAGE); }
-            }
-        }
-        password
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("error reading password")]
+    PasswordPromptError(#[from] std::io::Error)
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum PasswordPromptError {
+    #[error("Error reading password")]
+    IoError(#[from] std::io::Error),
+    #[error("the passwords do not match")]
+    MatchError,
+}
+
+fn prompt_password() -> Result<String, PasswordPromptError> {
+    let password = rpassword::prompt_password(CHOOSE_PASSWORD_MESSAGE)?;
+    let password_confirm = rpassword::prompt_password(CONFIRM_PASSWORD_MESSAGE)?;
+
+    if password == password_confirm {
+        Ok(password)
+    } else {
+        Err(PasswordPromptError::MatchError)
     }
 }
