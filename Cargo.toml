@@ -14,7 +14,7 @@ opt-level = 's'
 [dependencies]
 rpassword = "7.2"
 chacha20 = "0.7.2"
-sha3 = "0.9.1"
+sha3 = "0.10.8"
 clap = "2.33.3"
 
 [dev-dependencies]
