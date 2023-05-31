@@ -19,6 +19,7 @@ clap = "2.33.3"
 thiserror = "1"
 simplelog = "0.12.1"
 log = "0.4.18"
+eyre = "0.6.8"
 
 [dev-dependencies]
 file_diff = "1.0.0"
