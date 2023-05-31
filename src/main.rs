@@ -1,5 +1,5 @@
 mod app;
-use app::{cli_app::CliApp, ClaveApp, args::get_clap_app};
+use app::{cli_app::ClaveApp, args::get_clap_app};
 
 use std::path::PathBuf;
 
@@ -11,7 +11,7 @@ fn main() {
                 PathBuf::from(entry)
             }).collect();
 
-        let mut application = CliApp::new(file_paths);
+        let mut application = ClaveApp { file_paths };
         application.run();
     }
 }
