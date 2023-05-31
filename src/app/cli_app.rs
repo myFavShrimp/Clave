@@ -18,11 +18,10 @@ pub struct ClaveApp {
 
 impl ClaveApp {
     pub fn run(&mut self) -> Result<(), Error> {
-        self.file_paths.sort();
-        self.file_paths.dedup();
-
         println!("These are the paths you have selected for processing:");
-        &self.file_paths.iter().for_each(|item| println!("  \"{}\"", item.display()));
+        for path in &self.file_paths {
+            println!("  \"{}\"", path.display());
+        }
 
         let password = prompt_password()?;
 
