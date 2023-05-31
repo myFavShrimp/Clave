@@ -1,5 +1,4 @@
-mod app;
-use app::{cli_app::ClaveApp, args::get_clap_app};
+use clave::{cli_app::ClaveApp, args::get_clap_app};
 use simplelog::{CombinedLogger, TermLogger, LevelFilter, TerminalMode, ColorChoice};
 
 use std::path::PathBuf;
@@ -8,7 +7,12 @@ fn main() -> eyre::Result<(), eyre::Report> {
     let args = get_clap_app().get_matches();
     CombinedLogger::init(
         vec![
-            TermLogger::new(LevelFilter::Warn, simplelog::Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
+                TermLogger::new(
+                    LevelFilter::Warn,
+                    simplelog::Config::default(),
+                    TerminalMode::Mixed,
+                    ColorChoice::Auto,
+                ),
             ]
         ).unwrap();
 
