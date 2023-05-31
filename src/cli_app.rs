@@ -2,13 +2,14 @@ use std::path::PathBuf;
 
 use super::cryptor;
 
-static CHOOSE_PASSWORD_MESSAGE: &str = "Choose a password to use for processing (leave empty to exit): ";
+static CHOOSE_PASSWORD_MESSAGE: &str =
+    "Choose a password to use for processing (leave empty to exit): ";
 static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("error reading password")]
-    PasswordPromptError(#[from] PasswordPromptError)
+    PasswordPromptError(#[from] PasswordPromptError),
 }
 
 #[derive(Debug)]
@@ -16,41 +17,41 @@ pub struct ClaveApp {
     pub file_paths: Vec<PathBuf>,
 }
 
-    pub fn run(state: &ClaveApp) -> Result<(), Error> {
-        println!("These are the paths you have selected for processing:");
-        for path in &state.file_paths {
-            println!("  \"{}\"", path.display());
-        }
-
-        let password = prompt_password()?;
-
-        let mut cipher = cryptor::create_cipher(password.as_bytes());
-        let mut encryption_results = vec![];
-
-        for path in &state.file_paths {
-            encryption_results.extend(cryptor::encrypt_path(&mut cipher, path));
-        }
-
-        println!("Finished!");
-        if encryption_results.iter().any(|item| item.is_ok()) {
-            println!("The following files were processed successfully:");
-            for item in &encryption_results {
-                if let Ok(file_path) = item {
-                    println!("  \"{}\"", file_path.display());
-                }
-            }
-        }
-        if encryption_results.iter().any(|item| item.is_err()) {
-            println!("Errors occurred during the processing of the following files:");
-            for item in &encryption_results {
-                if let Err((file_path, error_message)) = item {
-                    println!("  {} : \"{}\"", error_message, file_path.display());
-                }
-            }
-        };
-
-        Ok(())
+pub fn run(state: &ClaveApp) -> Result<(), Error> {
+    println!("These are the paths you have selected for processing:");
+    for path in &state.file_paths {
+        println!("  \"{}\"", path.display());
     }
+
+    let password = prompt_password()?;
+
+    let mut cipher = cryptor::create_cipher(password.as_bytes());
+    let mut encryption_results = vec![];
+
+    for path in &state.file_paths {
+        encryption_results.extend(cryptor::encrypt_path(&mut cipher, path));
+    }
+
+    println!("Finished!");
+    if encryption_results.iter().any(|item| item.is_ok()) {
+        println!("The following files were processed successfully:");
+        for item in &encryption_results {
+            if let Ok(file_path) = item {
+                println!("  \"{}\"", file_path.display());
+            }
+        }
+    }
+    if encryption_results.iter().any(|item| item.is_err()) {
+        println!("Errors occurred during the processing of the following files:");
+        for item in &encryption_results {
+            if let Err((file_path, error_message)) = item {
+                println!("  {} : \"{}\"", error_message, file_path.display());
+            }
+        }
+    };
+
+    Ok(())
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum PasswordPromptError {

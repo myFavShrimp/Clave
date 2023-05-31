@@ -1,9 +1,9 @@
-use std::fs::{OpenOptions, File};
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::PathBuf;
-use std::io::{BufReader, BufWriter, Write, BufRead, Error};
 
-use chacha20::{XChaCha20, Key, XNonce};
 use chacha20::cipher::{NewCipher, StreamCipher};
+use chacha20::{Key, XChaCha20, XNonce};
 use sha3::{Digest, Sha3_224, Sha3_256};
 
 /// Gets a hash of a slice using the provided algorithm.
@@ -37,8 +37,7 @@ const PATH_ERROR_MESSAGE: &'static str = "Could not determine file path target!"
 
 /// Tries to get a buffered reader for the file at `file_path`.
 fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, Error> {
-    File::open(file_path)
-        .and_then(|file| Ok(BufReader::new(file)))
+    File::open(file_path).and_then(|file| Ok(BufReader::new(file)))
 }
 
 /// Tries to get a buffered writer for the file at `file_path`.
@@ -80,11 +79,9 @@ fn process_file(
 fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> EncryptionResult {
     return if let Ok(mut reader) = get_file_reader(file_path) {
         if let Ok(mut writer) = get_file_writer(file_path) {
-
             // encryption stuff
             // Ok(())
             return process_file(cipher, &mut reader, &mut writer);
-
         } else {
             Err(WRITE_FILE_ERROR_MESSAGE)
         }
@@ -102,22 +99,25 @@ pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> Vec<FinalEncrypti
                 for item in dir_content.filter_map(Result::ok) {
                     for res in encrypt_path(cipher, &item.path()) {
                         match res {
-                            Ok(path) => { results.push(Ok(PathBuf::from(path))) }
-                            Err((path, message)) => { results.push(Err((PathBuf::from(path), message))) }
+                            Ok(path) => results.push(Ok(PathBuf::from(path))),
+                            Err((path, message)) => {
+                                results.push(Err((PathBuf::from(path), message)))
+                            }
                         }
                     }
                 }
             }
-            Err(_) => { results.push(Err((PathBuf::from(path), READ_DIR_ERROR_MESSAGE))); }
+            Err(_) => {
+                results.push(Err((PathBuf::from(path), READ_DIR_ERROR_MESSAGE)));
+            }
         }
-    }
-    else if path.is_file() {
-        results.push(encrypt_file(cipher, path)
-            .and(Ok(PathBuf::from(path)))
-            .or_else(|message| Err((PathBuf::from(path), message)))
+    } else if path.is_file() {
+        results.push(
+            encrypt_file(cipher, path)
+                .and(Ok(PathBuf::from(path)))
+                .or_else(|message| Err((PathBuf::from(path), message))),
         );
-    }
-    else {
+    } else {
         results.push(Err((PathBuf::from(path), PATH_ERROR_MESSAGE)));
     }
     results
@@ -125,16 +125,20 @@ pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> Vec<FinalEncrypti
 
 #[cfg(test)]
 mod test {
-    use file_diff::diff_files;
     use super::*;
+    use file_diff::diff_files;
 
     const TEST_PASSWORD: &'static str = "This is a super secret password no one's able to guess.";
     const TEST_DIR: &'static str =
         &concat!(env!("CARGO_MANIFEST_DIR"), "/test_files/dir_to_process");
-    const TEST_PIC_1: &'static str =
-        &concat!(env!("CARGO_MANIFEST_DIR"), "/test_files/dir_to_process/pic.jpg");
-    const TEST_PIC_2: &'static str =
-        &concat!(env!("CARGO_MANIFEST_DIR"), "/test_files/dir_to_process/subdir/pic.jpg");
+    const TEST_PIC_1: &'static str = &concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_files/dir_to_process/pic.jpg"
+    );
+    const TEST_PIC_2: &'static str = &concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/test_files/dir_to_process/subdir/pic.jpg"
+    );
 
     /// Opens a file. Panics if opening fails.
     fn open_file_or_panic(path: &PathBuf) -> File {
@@ -173,17 +177,26 @@ mod test {
 
     #[test]
     fn test_test_files_eq() {
-        assert!(comp_files(&PathBuf::from(TEST_PIC_1), &PathBuf::from(TEST_PIC_2)));
+        assert!(comp_files(
+            &PathBuf::from(TEST_PIC_1),
+            &PathBuf::from(TEST_PIC_2)
+        ));
     }
 
     #[test]
     fn test_encrypt_file() {
         let mut cipher = create_cipher(TEST_PASSWORD.as_bytes());
         let _anything = encrypt_file(&mut cipher, &PathBuf::from(TEST_PIC_1));
-        assert!(!comp_files(&PathBuf::from(TEST_PIC_1), &PathBuf::from(TEST_PIC_2)));
+        assert!(!comp_files(
+            &PathBuf::from(TEST_PIC_1),
+            &PathBuf::from(TEST_PIC_2)
+        ));
 
         let mut cipher = create_cipher(TEST_PASSWORD.as_bytes());
         let _anything = encrypt_file(&mut cipher, &PathBuf::from(TEST_PIC_1));
-        assert!(comp_files(&PathBuf::from(TEST_PIC_1), &PathBuf::from(TEST_PIC_2)));
+        assert!(comp_files(
+            &PathBuf::from(TEST_PIC_1),
+            &PathBuf::from(TEST_PIC_2)
+        ));
     }
 }
