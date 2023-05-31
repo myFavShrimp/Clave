@@ -8,26 +8,26 @@ static PASSWORD_MATCH_ERROR_MESSAGE: &str = "The passwords do not match. Trying 
 static CHOOSE_PASSWORD_MESSAGE: &str = "Choose a password to use for processing (leave empty to exit): ";
 static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("error reading password")]
+    PasswordPromptError(#[from] PasswordPromptError)
+}
+
 #[derive(Debug)]
 pub struct ClaveApp {
     pub file_paths: Vec<PathBuf>,
 }
 
 impl ClaveApp {
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), Error> {
         self.file_paths.sort();
         self.file_paths.dedup();
 
         println!("These are the paths you have selected for processing:");
         &self.file_paths.iter().for_each(|item| println!("  \"{}\"", item.display()));
 
-        let mut password = match prompt_password() {
-            Some(password) => { password }
-            _ => {
-                println!("No input. Application is exited.");
-                std::process::exit(0);
-            }
-        };
+        let password = prompt_password()?;
 
         let mut cipher = cryptor::create_cipher(password.as_bytes());
         let mut encryption_results = vec![];
@@ -52,15 +52,11 @@ impl ClaveApp {
                     println!("  {} : \"{}\"", error_message, file_path.display());
                 }
             }
-        }
+        };
+
+        Ok(())
     }
 
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("error reading password")]
-    PasswordPromptError(#[from] std::io::Error)
 }
 
 #[derive(Debug, thiserror::Error)]
