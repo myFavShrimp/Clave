@@ -14,7 +14,7 @@ fn main() -> eyre::Result<(), eyre::Report> {
                     ColorChoice::Auto,
                 ),
             ]
-        ).unwrap();
+        )?;
 
     let file_paths = args.values_of("files").unwrap();
     let mut file_paths: Vec<PathBuf> = file_paths.into_iter()
@@ -23,7 +23,7 @@ fn main() -> eyre::Result<(), eyre::Report> {
     file_paths.dedup();
 
     let mut application = ClaveApp { file_paths };
-    application.run();
+    application.run()?;
 
     Ok(())
 }

@@ -16,10 +16,9 @@ pub struct ClaveApp {
     pub file_paths: Vec<PathBuf>,
 }
 
-impl ClaveApp {
-    pub fn run(&mut self) -> Result<(), Error> {
+    pub fn run(state: &ClaveApp) -> Result<(), Error> {
         println!("These are the paths you have selected for processing:");
-        for path in &self.file_paths {
+        for path in &state.file_paths {
             println!("  \"{}\"", path.display());
         }
 
@@ -28,7 +27,7 @@ impl ClaveApp {
         let mut cipher = cryptor::create_cipher(password.as_bytes());
         let mut encryption_results = vec![];
 
-        for path in &self.file_paths {
+        for path in &state.file_paths {
             encryption_results.extend(cryptor::encrypt_path(&mut cipher, path));
         }
 
@@ -52,8 +51,6 @@ impl ClaveApp {
 
         Ok(())
     }
-
-}
 
 #[derive(Debug, thiserror::Error)]
 pub enum PasswordPromptError {
