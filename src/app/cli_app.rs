@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use super::ClaveApp;
 use super::cryptor;
 
-use rpassword::read_password_from_tty;
+use rpassword::prompt_password;
 
 /// Clave console application struct.
 #[derive(Debug)]
@@ -74,10 +74,10 @@ impl CliApp {
         let mut password: Option<String> = None;
 
         while password.is_none() {
-            match read_password_from_tty(Some(CHOOSE_PASSWORD_MESSAGE)) {
+            match prompt_password(CHOOSE_PASSWORD_MESSAGE) {
                 Ok(input) => {
                     if !&input.is_empty() {
-                        match read_password_from_tty(Some(CONFIRM_PASSWORD_MESSAGE)) {
+                        match prompt_password(CONFIRM_PASSWORD_MESSAGE) {
                             Ok(input_confirm) => {
                                 if input == input_confirm {
                                     password = Some(input);
