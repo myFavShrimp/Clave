@@ -2,9 +2,6 @@ use std::path::PathBuf;
 
 use super::cryptor;
 
-static READ_PASSWORD_ERROR_MESSAGE: &str = "Could not read the password. Trying again ...";
-static PASSWORD_MATCH_ERROR_MESSAGE: &str = "The passwords do not match. Trying again ...";
-
 static CHOOSE_PASSWORD_MESSAGE: &str = "Choose a password to use for processing (leave empty to exit): ";
 static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
 
