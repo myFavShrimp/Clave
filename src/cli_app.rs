@@ -6,18 +6,12 @@ static CHOOSE_PASSWORD_MESSAGE: &str =
     "Choose a password to use for processing (leave empty to exit): ";
 static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("error reading password")]
-    PasswordPromptError(#[from] PasswordPromptError),
-}
-
 #[derive(Debug)]
 pub struct ClaveApp {
     pub file_paths: Vec<PathBuf>,
 }
 
-pub fn run(state: &ClaveApp) -> Result<(), Error> {
+pub fn run(state: &ClaveApp) -> Result<(), crate::Error> {
     let mut message = String::from("These are the paths you have selected for processing:");
     for path in &state.file_paths {
         message.push_str(&format!("\n  \"{}\"", path.display()));
