@@ -14,6 +14,7 @@ fn main() -> Result<(), log::SetLoggerError> {
 
     if let Err(e) = cli_app(file_paths) {
         log::error!("{}", e);
+        std::process::exit(1);
     }
 
     Ok(())
