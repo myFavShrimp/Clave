@@ -18,10 +18,12 @@ pub struct ClaveApp {
 }
 
 pub fn run(state: &ClaveApp) -> Result<(), Error> {
-    println!("These are the paths you have selected for processing:");
+    let mut message = String::from("These are the paths you have selected for processing:");
     for path in &state.file_paths {
-        println!("  \"{}\"", path.display());
+        message.push_str(&format!("\n  \"{}\"", path.display()));
     }
+
+    log::info!("{}", message);
 
     let password = prompt_password()?;
 
