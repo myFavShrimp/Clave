@@ -15,11 +15,14 @@ opt-level = 's'
 rpassword = "7.2"
 chacha20 = "0.7.2"
 sha3 = "0.10.8"
-clap = "2.33.3"
 thiserror = "1"
 simplelog = "0.12.1"
 log = "0.4.18"
 eyre = "0.6.8"
+
+[dependencies.clap]
+version = "4.3.0"
+features = ["derive"]
 
 [dev-dependencies]
 file_diff = "1.0.0"

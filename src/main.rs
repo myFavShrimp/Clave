@@ -1,19 +1,18 @@
-use clave::{args::get_clap_app, cli_app::ClaveApp};
+use clave::{args::Args, cli_app::ClaveApp};
 use simplelog::{ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode};
 
-use std::path::PathBuf;
+use clap::Parser;
 
 fn main() -> eyre::Result<(), eyre::Report> {
-    let args = get_clap_app().get_matches();
+    let args = Args::parse();
     CombinedLogger::init(vec![TermLogger::new(
         LevelFilter::Info,
         simplelog::Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
     )])?;
-    
-    let file_paths = args.values_of("files").unwrap();
-    let mut file_paths: Vec<PathBuf> = file_paths.into_iter().map(PathBuf::from).collect();
+
+    let mut file_paths = args.paths;
     file_paths.sort();
     file_paths.dedup();
 
