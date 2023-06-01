@@ -3,8 +3,8 @@ use simplelog::{ColorChoice, LevelFilter, TermLogger, TerminalMode};
 
 use clap::Parser;
 
-fn main() -> Result<(), clave::Error> {
-    let args = Args::parse();
+fn main() -> Result<(), log::SetLoggerError> {
+    let file_paths = Args::parse().paths;
     TermLogger::init(
         LevelFilter::Info,
         simplelog::Config::default(),
@@ -12,15 +12,18 @@ fn main() -> Result<(), clave::Error> {
         ColorChoice::Auto,
     )?;
 
-    let mut file_paths = args.paths;
+    if let Err(e) = cli_app(file_paths) {
+        log::error!("{}", e);
+    }
+
+    Ok(())
+}
+
+fn cli_app(mut file_paths: Vec<std::path::PathBuf>) -> Result<(), clave::Error> {
     file_paths.sort();
     file_paths.dedup();
 
     let application = ClaveApp { file_paths };
-
-    if let Err(e) = clave::cli_app::run(&application) {
-        log::error!("{}", e);
-    }
 
     Ok(())
 }

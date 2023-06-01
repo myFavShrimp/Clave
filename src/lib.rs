@@ -10,4 +10,6 @@ pub enum Error {
     LoggerError(#[from] log::SetLoggerError),
     #[error("error reading password: {0}")]
     PasswordPromptError(#[from] PasswordPromptError),
+    #[error("error collecting arguments: {0}")]
+    ClapError(#[from] clap::Error),
 }
