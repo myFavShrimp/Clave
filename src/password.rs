@@ -1,4 +1,4 @@
-static CHOOSE_PASSWORD_MESSAGE: &str = "Choose a password to use for processing: ";
+static CHOOSE_PASSWORD_MESSAGE: &str = "Choose a password: ";
 static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
 
 #[derive(Debug, thiserror::Error)]

@@ -24,7 +24,7 @@ Options:
 
 ``` bash
 $ clave ./test_files/
-Choose a password to use for processing:
+Choose a password:
 Confirm your password:
 22:32:28 [INFO] Processed './test_files/dir_to_process/pic.jpg'
 22:32:28 [INFO] Processed './test_files/dir_to_process/subdir/pic.jpg'
