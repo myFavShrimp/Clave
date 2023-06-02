@@ -4,6 +4,9 @@ use std::path::PathBuf;
 
 use chacha20::cipher::{NewCipher, StreamCipher};
 use chacha20::{Key, XChaCha20, XNonce};
+use sha3::{Sha3_224, Sha3_256};
+
+use crate::hash::hash_slice;
 
 fn generate_nonce(input: &[u8]) -> XNonce {
     let hashed = hash_slice::<Sha3_224>(input);
@@ -17,7 +20,7 @@ pub fn create_cipher(key: &[u8]) -> XChaCha20 {
     )
 }
 
-type EncryptionResult = Result<(), &'static str>;
+// type EncryptionResult = Result<(), &'static str>;
 type FinalEncryptionResult = Result<PathBuf, (PathBuf, &'static str)>;
 
 const WRITE_FILE_ERROR_MESSAGE: &'static str = "Could not write to file!";
@@ -25,48 +28,70 @@ const READ_FILE_ERROR_MESSAGE: &'static str = "Could not read from file!";
 const READ_DIR_ERROR_MESSAGE: &'static str = "Could not read from file!";
 const PATH_ERROR_MESSAGE: &'static str = "Could not determine file path target!";
 
+#[derive(Debug, thiserror::Error)]
+pub enum EncryptionResult {
+    #[error("Could not write to file [{bytes_written} bytes written]: {source}")]
+    FileWriteError {
+        source: std::io::Error,
+        bytes_written: usize,
+    },
+    #[error("Could not read from file [{bytes_written} bytes written]: {source}")]
+    FileReadError {
+        source: std::io::Error,
+        bytes_written: usize,
+    },
+    #[error("Could not read from file: {0}")]
+    DirReadError(std::io::Error),
+    #[error("Path is not a file/directory")]
+    PathError,
+}
+
+use EncryptionResult::*;
+
 fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, Error> {
-    File::open(file_path).and_then(|file| Ok(BufReader::new(file)))
+    File::open(file_path).map(BufReader::new)
 }
 
 fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, Error> {
     OpenOptions::new()
         .write(true)
         .open(file_path)
-        .and_then(|file| Ok(BufWriter::new(file)))
+        .map(BufWriter::new)
 }
 
 fn process_file(
     cipher: &mut XChaCha20,
     reader: &mut BufReader<File>,
     writer: &mut BufWriter<File>,
-) -> EncryptionResult {
-    let mut length = 1;
-    while length > 0 {
-        if let Ok(buffer) = reader.fill_buf() {
-            let mut data: Vec<u8> = Vec::new();
+) -> Result<usize, EncryptionResult> {
+    let mut bytes_written = 0;
+    loop {
+        let buffer = reader.fill_buf().map_err(|e| FileReadError {
+            source: e,
+            bytes_written,
+        })?;
 
-            data.extend_from_slice(buffer);
-            cipher.apply_keystream(&mut data);
+        let mut data: Vec<u8> = Vec::new();
 
-            length = buffer.len();
-            reader.consume(length);
+        data.extend_from_slice(buffer);
+        cipher.apply_keystream(&mut data);
 
-            if let Err(_) = writer.write(&data) {
-                return Err(WRITE_FILE_ERROR_MESSAGE);
-            }
-        } else {
-            return Err(READ_FILE_ERROR_MESSAGE);
+        let length = buffer.len();
+        if length == 0 {
+            return Ok(bytes_written);
         }
+        reader.consume(length);
+
+        bytes_written += writer.write(&data).map_err(|e| FileWriteError {
+            source: e,
+            bytes_written,
+        })?;
     }
-    Ok(())
 }
 
 fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> EncryptionResult {
     return if let Ok(mut reader) = get_file_reader(file_path) {
         if let Ok(mut writer) = get_file_writer(file_path) {
-            // encryption stuff
-            // Ok(())
             return process_file(cipher, &mut reader, &mut writer);
         } else {
             Err(WRITE_FILE_ERROR_MESSAGE)

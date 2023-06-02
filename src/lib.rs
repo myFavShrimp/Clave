@@ -1,8 +1,8 @@
 pub mod args;
 // pub mod cli_app;
-// mod cryptor;
-mod password;
+mod cryptor;
 mod hash;
+mod password;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -19,7 +19,5 @@ pub fn process(paths: Vec<std::path::PathBuf>) -> Result<(), Error> {
 
     let mut cipher = cryptor::create_cipher(password.as_bytes());
 
-    
-    
     Ok(())
 }
