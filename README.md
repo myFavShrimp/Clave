@@ -1,50 +1,32 @@
 # Clave
 
-Encrypts your files in place for you to share them securely.
+Encrypts files in place for you to share them securely.
 
-This application uses the XChaCha20 stream cipher to process your files. XChaCha20 does not provide authentication (read [here](http://cryptowiki.net/index.php?title=Authenticated_encryption)).
+This application uses the XChaCha20 stream cipher to process your files. XChaCha20 does not provide authentication (read [here](https://en.wikipedia.org/wiki/Authenticated_encryption)).
 
 ## Usage
 
 ``` bash
 $ ./clave
-clave 0.1.0
+Encrypts files in place for you to share them securely
 
-Encrypts your files in place to share them securely.
+Usage: clave [PATHS]...
 
-USAGE:
-    clave <files>...
+Arguments:
+  [PATHS]...
 
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-ARGS:
-    <files>...    Files to process
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 ## Examples
 
 ``` bash
-$ clave ./test_files/dir_to_process/
-These are the paths you have selected for processing:
-  "./test_files/dir_to_process/"
-Choose a password to use for processing (leave empty to exit):
+$ clave ./test_files/
+Choose a password to use for processing:
 Confirm your password:
-Finished!
-The following files were processed successfully:
-  ./test_files/dir_to_process/pic.jpg
-Errors occurred during the processing of the following files:
-  Could not write to file! : ./test_files/dir_to_process/subdir/pic.jpg
-```
-
-``` bash
-$ clave ./test_files/dir_to_process/subdir/pic.jpg
-These are the paths you have selected for processing:
-  "./test_files/dir_to_process/subdir/pic.jpg"
-Choose a password to use for processing (leave empty to exit):
-Confirm your password:
-Finished!
-The following files were processed successfully:
-  ./test_files/dir_to_process/subdir/pic.jpg
+22:32:28 [INFO] Processed './test_files/dir_to_process/pic.jpg'
+22:32:28 [INFO] Processed './test_files/dir_to_process/subdir/pic.jpg'
+22:32:28 [ERROR] Could not write to file './test_files/test_pic.jpg' [0 bytes written]: Permission denied (os error 13)
 ```

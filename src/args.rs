@@ -1,6 +1,6 @@
 use clap;
 
-/// Encrypts your files in place for you to share them securely.
+/// Encrypts files in place for you to share them securely.
 #[derive(clap::Parser, Debug)]
 #[command(
     author, 
