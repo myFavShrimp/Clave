@@ -1,7 +1,8 @@
 pub mod args;
-pub mod cli_app;
-mod cryptor;
+// pub mod cli_app;
+// mod cryptor;
 mod password;
+mod hash;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

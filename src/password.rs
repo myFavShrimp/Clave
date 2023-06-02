@@ -3,7 +3,7 @@ static CONFIRM_PASSWORD_MESSAGE: &str = "Confirm your password: ";
 
 #[derive(Debug, thiserror::Error)]
 pub enum PasswordPromptError {
-    #[error("Error reading password")]
+    #[error("Error reading password - {0}")]
     IoError(#[from] std::io::Error),
     #[error("the passwords do not match")]
     MatchError,

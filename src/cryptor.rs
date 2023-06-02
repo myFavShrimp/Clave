@@ -4,13 +4,6 @@ use std::path::PathBuf;
 
 use chacha20::cipher::{NewCipher, StreamCipher};
 use chacha20::{Key, XChaCha20, XNonce};
-use sha3::{Digest, Sha3_224, Sha3_256};
-
-fn hash_slice<H: Digest>(input: &[u8]) -> Vec<u8> {
-    let mut hasher = H::new();
-    hasher.update(input);
-    hasher.finalize().as_slice().to_owned()
-}
 
 fn generate_nonce(input: &[u8]) -> XNonce {
     let hashed = hash_slice::<Sha3_224>(input);
