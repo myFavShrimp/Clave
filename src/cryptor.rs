@@ -20,6 +20,11 @@ pub fn create_cipher(key: &[u8]) -> XChaCha20 {
     )
 }
 
+pub enum EncryptionResult {
+    Ok(PathBuf),
+    Error(EncryptionError),
+}
+
 #[derive(Default, Debug)]
 pub struct FinalEncryptionResult {
     pub oks: Vec<PathBuf>,
@@ -30,6 +35,19 @@ impl FinalEncryptionResult {
     pub fn extend(&mut self, result: FinalEncryptionResult) {
         self.oks.extend(result.oks);
         self.errs.extend(result.errs);
+    }
+
+    pub fn push_and_log(&mut self, item: EncryptionResult) {
+        match item {
+            EncryptionResult::Ok(value) => {
+                log::info!("Processed '{}'", value.display());
+                self.oks.push(value);
+            }
+            EncryptionResult::Error(value) => {
+                log::error!("{}", value);
+                self.errs.push(value);
+            }
+        }
     }
 }
 
@@ -143,13 +161,13 @@ pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> FinalEncryptionRe
     let mut result = FinalEncryptionResult::default();
 
     if path.is_symlink() {
-        result
-            .errs
-            .push(EncryptionError::PathError { path: path.clone() });
+        result.push_and_log(EncryptionResult::Error(EncryptionError::PathError {
+            path: path.clone(),
+        }));
     } else if path.is_file() {
         match encrypt_file(cipher, path) {
-            Ok(_) => result.oks.push(path.clone()),
-            Err(err) => result.errs.push(err),
+            Ok(_) => result.push_and_log(EncryptionResult::Ok(path.clone())),
+            Err(err) => result.push_and_log(EncryptionResult::Error(err)),
         };
     } else if path.is_dir() {
         match path.read_dir() {
@@ -157,10 +175,12 @@ pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> FinalEncryptionRe
                 for item in dir_content {
                     match item {
                         Ok(dir_entry) => result.extend(encrypt_path(cipher, &dir_entry.path())),
-                        Err(e) => result.errs.push(EncryptionError::DirReadError {
-                            source: e,
-                            path: path.clone(),
-                        }),
+                        Err(e) => result.push_and_log(EncryptionResult::Error(
+                            EncryptionError::DirReadError {
+                                source: e,
+                                path: path.clone(),
+                            },
+                        )),
                     }
                 }
             }

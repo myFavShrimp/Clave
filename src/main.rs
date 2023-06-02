@@ -12,19 +12,18 @@ fn main() -> Result<(), log::SetLoggerError> {
         ColorChoice::Auto,
     )?;
 
-    if let Err(e) = cli_app(file_paths) {
-        log::error!("{}", e);
+    if cli_app(file_paths).is_err() {
         std::process::exit(1);
     }
 
     Ok(())
 }
 
-fn cli_app(mut file_paths: Vec<std::path::PathBuf>) -> Result<(), clave::Error> {
+fn cli_app(mut file_paths: Vec<std::path::PathBuf>) -> Result<(), ()> {
     file_paths.sort();
     file_paths.dedup();
 
-    clave::process(file_paths)?;
+    clave::process(file_paths).or(Err(()))?;
 
     Ok(())
 }
