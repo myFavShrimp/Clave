@@ -53,13 +53,13 @@ impl FinalEncryptionResult {
 
 #[derive(Debug, thiserror::Error)]
 pub enum EncryptionError {
-    #[error("Could not write to file [{bytes_written} bytes written]: {source}")]
+    #[error("Could not write to file '{path}' [{bytes_written} bytes written]: {source}")]
     FileWriteError {
         source: std::io::Error,
         bytes_written: usize,
         path: PathBuf,
     },
-    #[error("Could not read from file [{bytes_written} bytes written]: {source}")]
+    #[error("Could not read from file '{path}' [{bytes_written} bytes written]: {source}")]
     FileReadError {
         source: std::io::Error,
         bytes_written: usize,
@@ -70,7 +70,7 @@ pub enum EncryptionError {
         source: std::io::Error,
         path: PathBuf,
     },
-    #[error("Path is not a file/directory")]
+    #[error("Path is not a file/directory '{path}'")]
     PathError { path: PathBuf },
     #[error("Could not process file '{path}': {source}")]
     ProcessingError {
@@ -160,7 +160,7 @@ fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> Result<usize, En
 pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> FinalEncryptionResult {
     let mut result = FinalEncryptionResult::default();
 
-    if path.is_symlink() {
+    if path.is_symlink() || !path.exists() {
         result.push_and_log(EncryptionResult::Error(EncryptionError::PathError {
             path: path.clone(),
         }));
