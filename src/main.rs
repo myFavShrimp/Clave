@@ -24,7 +24,7 @@ fn cli_app(mut file_paths: Vec<std::path::PathBuf>) -> Result<(), clave::Error> 
     file_paths.sort();
     file_paths.dedup();
 
-    let application = ClaveApp { file_paths };
+    clave::process(file_paths)?;
 
     Ok(())
 }
