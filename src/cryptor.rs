@@ -29,7 +29,7 @@ const READ_DIR_ERROR_MESSAGE: &'static str = "Could not read from file!";
 const PATH_ERROR_MESSAGE: &'static str = "Could not determine file path target!";
 
 #[derive(Debug, thiserror::Error)]
-pub enum EncryptionResult {
+pub enum EncryptionError {
     #[error("Could not write to file [{bytes_written} bytes written]: {source}")]
     FileWriteError {
         source: std::io::Error,
@@ -46,9 +46,9 @@ pub enum EncryptionResult {
     PathError,
 }
 
-use EncryptionResult::*;
+use EncryptionError::*;
 
-fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, EncryptionResult> {
+fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, EncryptionError> {
     File::open(file_path)
         .map(BufReader::new)
         .map_err(|e| FileReadError {
@@ -57,7 +57,7 @@ fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, EncryptionRes
         })
 }
 
-fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, EncryptionResult> {
+fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, EncryptionError> {
     OpenOptions::new()
         .write(true)
         .open(file_path)
@@ -72,7 +72,7 @@ fn process_file(
     cipher: &mut XChaCha20,
     reader: &mut BufReader<File>,
     writer: &mut BufWriter<File>,
-) -> Result<usize, EncryptionResult> {
+) -> Result<usize, EncryptionError> {
     let mut bytes_written = 0;
     loop {
         let buffer = reader.fill_buf().map_err(|e| FileReadError {
@@ -98,7 +98,7 @@ fn process_file(
     }
 }
 
-fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> Result<usize, EncryptionResult> {
+fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> Result<usize, EncryptionError> {
     let reader = get_file_reader(file_path)?;
     let writer = get_file_writer(file_path)?;
 
