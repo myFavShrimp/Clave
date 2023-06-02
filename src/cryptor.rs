@@ -48,15 +48,24 @@ pub enum EncryptionResult {
 
 use EncryptionResult::*;
 
-fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, Error> {
-    File::open(file_path).map(BufReader::new)
+fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, EncryptionResult> {
+    File::open(file_path)
+        .map(BufReader::new)
+        .map_err(|e| FileReadError {
+            source: e,
+            bytes_written: 0,
+        })
 }
 
-fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, Error> {
+fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, EncryptionResult> {
     OpenOptions::new()
         .write(true)
         .open(file_path)
         .map(BufWriter::new)
+        .map_err(|e| FileWriteError {
+            source: e,
+            bytes_written: 0,
+        })
 }
 
 fn process_file(
@@ -89,16 +98,11 @@ fn process_file(
     }
 }
 
-fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> EncryptionResult {
-    return if let Ok(mut reader) = get_file_reader(file_path) {
-        if let Ok(mut writer) = get_file_writer(file_path) {
-            return process_file(cipher, &mut reader, &mut writer);
-        } else {
-            Err(WRITE_FILE_ERROR_MESSAGE)
-        }
-    } else {
-        Err(READ_FILE_ERROR_MESSAGE)
-    };
+fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> Result<usize, EncryptionResult> {
+    let reader = get_file_reader(file_path)?;
+    let writer = get_file_writer(file_path)?;
+
+    process_file(cipher, &mut reader, &mut writer)
 }
 
 pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> Vec<FinalEncryptionResult> {
