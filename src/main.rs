@@ -1,4 +1,4 @@
-use clave::{args::Args, cli_app::ClaveApp};
+use clave::args::Args;
 use simplelog::{ColorChoice, LevelFilter, TermLogger, TerminalMode};
 
 use clap::Parser;

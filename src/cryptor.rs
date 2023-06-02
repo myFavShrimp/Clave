@@ -1,5 +1,5 @@
 use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Error, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
 use chacha20::cipher::{NewCipher, StreamCipher};
@@ -20,13 +20,18 @@ pub fn create_cipher(key: &[u8]) -> XChaCha20 {
     )
 }
 
-// type EncryptionResult = Result<(), &'static str>;
-type FinalEncryptionResult = Result<PathBuf, (PathBuf, &'static str)>;
+#[derive(Default, Debug)]
+pub struct FinalEncryptionResult {
+    pub oks: Vec<PathBuf>,
+    pub errs: Vec<EncryptionError>,
+}
 
-const WRITE_FILE_ERROR_MESSAGE: &'static str = "Could not write to file!";
-const READ_FILE_ERROR_MESSAGE: &'static str = "Could not read from file!";
-const READ_DIR_ERROR_MESSAGE: &'static str = "Could not read from file!";
-const PATH_ERROR_MESSAGE: &'static str = "Could not determine file path target!";
+impl FinalEncryptionResult {
+    pub fn extend(&mut self, result: FinalEncryptionResult) {
+        self.oks.extend(result.oks);
+        self.errs.extend(result.errs);
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum EncryptionError {
@@ -34,26 +39,35 @@ pub enum EncryptionError {
     FileWriteError {
         source: std::io::Error,
         bytes_written: usize,
+        path: PathBuf,
     },
     #[error("Could not read from file [{bytes_written} bytes written]: {source}")]
     FileReadError {
         source: std::io::Error,
         bytes_written: usize,
+        path: PathBuf,
     },
-    #[error("Could not read from file: {0}")]
-    DirReadError(std::io::Error),
+    #[error("Could not read from dir '{path}': {source}")]
+    DirReadError {
+        source: std::io::Error,
+        path: PathBuf,
+    },
     #[error("Path is not a file/directory")]
-    PathError,
+    PathError { path: PathBuf },
+    #[error("Could not process file '{path}': {source}")]
+    ProcessingError {
+        source: ProcessingError,
+        path: PathBuf,
+    },
 }
-
-use EncryptionError::*;
 
 fn get_file_reader(file_path: &PathBuf) -> Result<BufReader<File>, EncryptionError> {
     File::open(file_path)
         .map(BufReader::new)
-        .map_err(|e| FileReadError {
+        .map_err(|e| EncryptionError::FileReadError {
             source: e,
             bytes_written: 0,
+            path: file_path.clone(),
         })
 }
 
@@ -62,20 +76,35 @@ fn get_file_writer(file_path: &PathBuf) -> Result<BufWriter<File>, EncryptionErr
         .write(true)
         .open(file_path)
         .map(BufWriter::new)
-        .map_err(|e| FileWriteError {
+        .map_err(|e| EncryptionError::FileWriteError {
             source: e,
             bytes_written: 0,
+            path: file_path.clone(),
         })
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ProcessingError {
+    #[error("Could not write to file [{bytes_written} bytes written]: {source}")]
+    WriteError {
+        source: std::io::Error,
+        bytes_written: usize,
+    },
+    #[error("Could not read from file [{bytes_written} bytes written]: {source}")]
+    ReadError {
+        source: std::io::Error,
+        bytes_written: usize,
+    },
 }
 
 fn process_file(
     cipher: &mut XChaCha20,
     reader: &mut BufReader<File>,
     writer: &mut BufWriter<File>,
-) -> Result<usize, EncryptionError> {
+) -> Result<usize, ProcessingError> {
     let mut bytes_written = 0;
     loop {
-        let buffer = reader.fill_buf().map_err(|e| FileReadError {
+        let buffer = reader.fill_buf().map_err(|e| ProcessingError::ReadError {
             source: e,
             bytes_written,
         })?;
@@ -91,50 +120,58 @@ fn process_file(
         }
         reader.consume(length);
 
-        bytes_written += writer.write(&data).map_err(|e| FileWriteError {
-            source: e,
-            bytes_written,
-        })?;
+        bytes_written += writer
+            .write(&data)
+            .map_err(|e| ProcessingError::WriteError {
+                source: e,
+                bytes_written,
+            })?;
     }
 }
 
 fn encrypt_file(cipher: &mut XChaCha20, file_path: &PathBuf) -> Result<usize, EncryptionError> {
-    let reader = get_file_reader(file_path)?;
-    let writer = get_file_writer(file_path)?;
+    let mut reader = get_file_reader(file_path)?;
+    let mut writer = get_file_writer(file_path)?;
 
-    process_file(cipher, &mut reader, &mut writer)
+    process_file(cipher, &mut reader, &mut writer).map_err(|e| EncryptionError::ProcessingError {
+        source: e,
+        path: file_path.clone(),
+    })
 }
 
-pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> Vec<FinalEncryptionResult> {
-    let mut results: Vec<FinalEncryptionResult> = vec![];
-    if path.is_dir() {
+pub fn encrypt_path(cipher: &mut XChaCha20, path: &PathBuf) -> FinalEncryptionResult {
+    let mut result = FinalEncryptionResult::default();
+
+    if path.is_symlink() {
+        result
+            .errs
+            .push(EncryptionError::PathError { path: path.clone() });
+    } else if path.is_file() {
+        match encrypt_file(cipher, path) {
+            Ok(_) => result.oks.push(path.clone()),
+            Err(err) => result.errs.push(err),
+        };
+    } else if path.is_dir() {
         match path.read_dir() {
             Ok(dir_content) => {
-                for item in dir_content.filter_map(Result::ok) {
-                    for res in encrypt_path(cipher, &item.path()) {
-                        match res {
-                            Ok(path) => results.push(Ok(PathBuf::from(path))),
-                            Err((path, message)) => {
-                                results.push(Err((PathBuf::from(path), message)))
-                            }
-                        }
+                for item in dir_content {
+                    match item {
+                        Ok(dir_entry) => result.extend(encrypt_path(cipher, &dir_entry.path())),
+                        Err(e) => result.errs.push(EncryptionError::DirReadError {
+                            source: e,
+                            path: path.clone(),
+                        }),
                     }
                 }
             }
-            Err(_) => {
-                results.push(Err((PathBuf::from(path), READ_DIR_ERROR_MESSAGE)));
-            }
+            Err(e) => result.errs.push(EncryptionError::DirReadError {
+                source: e,
+                path: path.clone(),
+            }),
         }
-    } else if path.is_file() {
-        results.push(
-            encrypt_file(cipher, path)
-                .and(Ok(PathBuf::from(path)))
-                .or_else(|message| Err((PathBuf::from(path), message))),
-        );
-    } else {
-        results.push(Err((PathBuf::from(path), PATH_ERROR_MESSAGE)));
     }
-    results
+
+    result
 }
 
 #[cfg(test)]

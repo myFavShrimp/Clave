@@ -1,5 +1,4 @@
 pub mod args;
-// pub mod cli_app;
 mod cryptor;
 mod hash;
 mod password;
@@ -18,6 +17,16 @@ pub fn process(paths: Vec<std::path::PathBuf>) -> Result<(), Error> {
     let password = password::prompt_password()?;
 
     let mut cipher = cryptor::create_cipher(password.as_bytes());
+
+    let result = paths.iter().fold(
+        cryptor::FinalEncryptionResult::default(),
+        |mut acc, path| {
+            acc.extend(cryptor::encrypt_path(&mut cipher, path));
+            acc
+        },
+    );
+
+    dbg!("{}", result);
 
     Ok(())
 }
