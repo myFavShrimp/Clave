@@ -4,6 +4,12 @@ Encrypts files in place for you to share them securely.
 
 This application uses the XChaCha20 stream cipher to process your files. XChaCha20 does not provide authentication (read [here](https://en.wikipedia.org/wiki/Authenticated_encryption)).
 
+## Installation
+
+```bash
+cargo install --git https://github.com/myFavShrimp/Clave.git --rev ec38dbb
+```
+
 ## Usage
 
 ``` bash
